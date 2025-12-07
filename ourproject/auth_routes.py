@@ -131,7 +131,11 @@ def hash_password(password: str) -> str:
     # 2) fallback: bcrypt
     if BCRYPT_AVAILABLE:
         try:
-            return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+            hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+            # bcrypt v4.0.0+ returns str, older versions return bytes
+            if isinstance(hashed, bytes):
+                return hashed.decode("utf-8")
+            return hashed
         except Exception as e:
             print("⚠ bcrypt.hashpw error:", e)
 
@@ -170,8 +174,10 @@ def verify_password(stored: str, provided: str) -> bool:
     # 3) bcrypt hash (legacy)
     if BCRYPT_AVAILABLE:
         try:
-            stored_bytes = stored.encode("utf-8")
-            if bcrypt.checkpw(provided.encode("utf-8"), stored_bytes):
+            # Handle both str and bytes for stored hash
+            stored_bytes = stored.encode("utf-8") if isinstance(stored, str) else stored
+            provided_encoded = provided.encode("utf-8")
+            if bcrypt.checkpw(provided_encoded, stored_bytes):
                 return True
         except Exception:
             pass
