@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Search City — Travel Buddy</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { brand: "#6D28D9" }   /* Purple brand color */
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-white text-gray-900 min-h-screen">
+
+  <!-- ░░ TOP NAV ░░ -->
+  <header class="bg-brand text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-white text-brand font-bold flex items-center justify-center">
+          TB
+        </div>
+        <div>
+          <div class="text-xs opacity-80 uppercase tracking-wide">Travel Buddy</div>
+          <h1 class="text-lg font-semibold">Search & Routes</h1>
+        </div>
+      </div>
+
+      <nav class="flex gap-5 text-sm">
+        <a href="{{ url_for('home') }}" class="hover:underline">Home</a>
+        <a href="{{ url_for('profile_page') }}" class="hover:underline">Profile</a>
+        <a href="{{ url_for('settings_page') }}" class="hover:underline">Settings</a>
+        <a href="{{ url_for('logout') }}" class="text-red-200 hover:text-red-100 font-medium">Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ░░ MAIN BODY ░░ -->
+  <main class="max-w-6xl mx-auto px-4 py-7 space-y-7">
+
+    <!-- ░░ ROUTE SEARCH CARD ░░ -->
+    <section class="grid md:grid-cols-[3fr,2fr] gap-6">
+
+      <!-- LEFT CARD -->
+      <div class="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm space-y-3">
+        <h2 class="text-sm font-semibold text-brand">Quick Route Between Cities</h2>
+        <p class="text-[11px] text-gray-600">Uses your A* model & coordinates.</p>
+
+        <div class="grid sm:grid-cols-2 gap-4 mt-2 text-sm">
+          <div>
+            <label class="block font-medium mb-1">From city</label>
+            <select id="fromCity" class="w-full border border-gray-300 rounded-lg px-2 py-2 bg-white">
+              <option value="">Select city</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-medium mb-1">To city</label>
+            <select id="toCity" class="w-full border border-gray-300 rounded-lg px-2 py-2 bg-white">
+              <option value="">Select city</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3 mt-3">
+          <button id="btnFindRoute"
+                  class="px-4 py-2 rounded-lg bg-brand text-white text-xs font-semibold hover:bg-purple-800">
+            Find Route
+          </button>
+
+          <button id="btnPredictCrowd"
+                  class="px-4 py-2 rounded-lg bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600">
+            Predict Crowd
+          </button>
+        </div>
+
+        <div id="routeResult" class="min-h-[2rem] text-sm mt-3 text-gray-700 font-medium"></div>
+        <div id="crowdResult" class="min-h-[2rem] text-sm text-gray-700"></div>
+      </div>
+
+      <!-- RIGHT CARD -->
+      <div class="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm space-y-3">
+        <h2 class="text-sm font-semibold text-brand">Open City Page (DB)</h2>
+        <p class="text-[11px] text-gray-600">Loads <code>/city/&lt;slug&gt;</code> from MongoDB</p>
+
+        <label class="block font-medium text-sm mb-1">Choose a city</label>
+        <select id="exploreCitySelect"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+          <option value="">Select city</option>
+        </select>
+
+        <button id="btnOpenCity"
+                class="mt-2 px-4 py-2 rounded-lg bg-brand text-white text-xs font-semibold hover:bg-purple-800">
+          Open City Page
+        </button>
+
+      </div>
+
+    </section>
+
+    <section class="rounded-xl border border-gray-200 bg-gray-100 p-4 text-xs text-gray-600">
+      Your searched routes are saved in
+      <a href="{{ url_for('history_page') }}" class="text-brand font-semibold">History</a>
+      and
+      <a href="{{ url_for('profile_page') }}" class="text-brand font-semibold">Profile</a>.
+    </section>
+  </main>
+
+  <!-- ░░ SCRIPT ░░ -->
+<script>
+const fromSel = document.getElementById("fromCity");
+const toSel = document.getElementById("toCity");
+const exploreSel = document.getElementById("exploreCitySelect");
+const routeResultEl = document.getElementById("routeResult");
+const crowdResultEl = document.getElementById("crowdResult");
+
+async function loadCities() {
+  let res = await fetch("/get-locations");
+  let list = await res.json();
+  if (!Array.isArray(list)) return;
+
+  let opts = '<option value="">Select city</option>' +
+    list.map(c => `<option value="${c}">${c}</option>`).join("");
+
+  fromSel.innerHTML = opts;
+  toSel.innerHTML = opts;
+  exploreSel.innerHTML = opts;
+}
+
+loadCities();
+
+document.getElementById("btnFindRoute").onclick = async () => {
+  let a = fromSel.value.trim(), b = toSel.value.trim();
+  if (!a || !b) {
+    routeResultEl.textContent = "⚠ Select both cities.";
+    return;
+  }
+  let r = await fetch("/find-route", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ from_city: a, to_city: b })
+  });
+  let d = await r.json();
+  if (d.error) routeResultEl.textContent = d.error;
+  else {
+    let R = d.routes[0];
+    routeResultEl.innerHTML = `
+     Route: <b>${R.path.join(" → ")}</b><br>
+     Distance: <b>${R.distance}</b> km<br>
+     Time: <b>${R.time}</b>
+    `;
+  }
+};
+
+document.getElementById("btnPredictCrowd").onclick = async () => {
+  let c = toSel.value.trim();
+  if (!c) return crowdResultEl.textContent = "⚠ Choose a city first.";
+  let r = await fetch(`/predict_crowd?city=${encodeURIComponent(c)}`);
+  let d = await r.json();
+  crowdResultEl.innerHTML = `${d.message}<br><b>${d.predicted_crowd}</b>/100`;
+};
+
+document.getElementById("btnOpenCity").onclick = () => {
+  let c = exploreSel.value.trim();
+  if (!c) return alert("Select a city");
+  window.location.href = "/city/" + c.toLowerCase().replace(/\s+/g,"-");
+};
+</script>
+
+</body>
+</html>

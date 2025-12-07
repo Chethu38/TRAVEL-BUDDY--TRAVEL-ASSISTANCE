@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>{{ place.name }} — Travel Buddy</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = { 
+      theme: { extend: { colors: { brand: "#6D28D9" } } } 
+    };
+  </script>
+
+  <style>
+    /* HERO IMAGE FIX: Fully visible, no cropping, big 250px */
+    .hero-frame {
+      width: 100%;
+      height: 250px;              /* box height */
+      min-height: 250px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f3f4f6;        /* light gray background */
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .hero-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;        /* FULL IMAGE, no cropping */
+    }
+  </style>
+
+</head>
+
+<body class="bg-white text-gray-900 min-h-screen">
+
+<!-- HEADER -->
+<header class="bg-brand text-white shadow-md sticky top-0 z-50">
+  <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <a href="{{ url_for('city_page', slug=place.city_slug) }}" class="text-sm hover:underline">← Back</a>
+      <h1 class="text-lg font-semibold truncate">{{ place.name }}</h1>
+    </div>
+    <div class="text-xs opacity-90">{{ place.type or "Place" }}</div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+
+  <!-- HERO + GALLERY -->
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- MAIN IMAGE AREA -->
+    <div class="lg:col-span-2 bg-white rounded-2xl shadow p-4">
+
+      <!-- HERO IMAGE (FULLY VISIBLE, NO CROPPING) -->
+      <div class="hero-frame">
+        <img id="hero-img"
+             src="{{ place.images[0] if place.images else '/static/images/placeholder.jpg' }}"
+             class="hero-img"
+             alt="{{ place.name }}">
+      </div>
+
+      <!-- Thumbnails -->
+      {% if place.images and place.images|length > 1 %}
+      <div class="mt-4 flex gap-2 overflow-x-auto">
+        {% for img in place.images %}
+        <button type="button"
+                onclick="setHeroImage('{{ img }}')"
+                class="flex-shrink-0 w-24 h-20 rounded border overflow-hidden">
+          <img src="{{ img }}" class="w-full h-full object-cover"/>
+        </button>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- SIDE INFO -->
+    <aside class="bg-white rounded-2xl shadow p-4 flex flex-col gap-3">
+      
+      <h2 class="text-lg font-semibold">{{ place.name }}</h2>
+      <p class="text-xs text-gray-500">{{ place.address }}</p>
+
+      <div class="text-sm mt-2">
+        <div class="text-xs text-gray-600">Timings</div>
+        <div class="font-medium">
+          {% if place.openTime and place.closeTime %}
+            {{ place.openTime }} – {{ place.closeTime }}
+          {% else %}
+            Not specified
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- View on Google Maps -->
+      <a target="_blank"
+         href="https://www.google.com/maps/search/?api=1&query={{ place.lat }},{{ place.lng }}"
+         class="px-3 py-2 rounded border text-sm text-gray-700 text-center hover:bg-gray-100">
+         View on Google Maps
+      </a>
+
+      {% if place.phone %}
+      <a href="tel:{{ place.phone }}" 
+         class="px-3 py-2 rounded border text-sm text-gray-700 text-center hover:bg-gray-100">
+         Call
+      </a>
+      {% endif %}
+
+      {% if place.website %}
+      <a href="{{ place.website }}" 
+         target="_blank"
+         class="px-3 py-2 rounded border text-sm text-gray-700 text-center hover:bg-gray-100">
+         Website
+      </a>
+      {% endif %}
+
+      <!-- CROWD PREDICTION CARD -->
+      <div id="crowd-card" class="mt-3 p-3 rounded-lg border bg-gradient-to-r from-white to-gray-50">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs text-gray-600">Crowd</div>
+            <div id="crowd-value" class="text-2xl font-bold text-gray-800">—</div>
+          </div>
+          <div id="crowd-badge" class="text-xs font-semibold px-2 py-1 rounded-full bg-gray-200 text-gray-800">
+            Loading...
+          </div>
+        </div>
+        <p id="crowd-message" class="mt-2 text-xs text-gray-600">Predicting crowd... </p>
+        <div id="crowd-error" class="hidden mt-2 text-xs text-red-600"></div>
+      </div>
+
+    </aside>
+
+  </section>
+
+  <!-- ABOUT SECTION -->
+  <section class="bg-white rounded-2xl shadow p-4">
+    <h3 class="text-lg font-semibold mb-2">About</h3>
+    <p class="text-sm text-gray-700">
+      {{ place.description or "No description available." }}
+    </p>
+  </section>
+
+  <!-- EXTRA DETAILS -->
+  <section class="bg-white rounded-2xl shadow p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+    
+    <div>
+      <h4 class="text-sm font-semibold text-gray-700">Address</h4>
+      <p class="text-xs text-gray-600 mt-1">{{ place.address or "Not provided" }}</p>
+
+      {% if place.phone %}
+      <p class="text-xs text-gray-600 mt-2">Phone: <a href="tel:{{ place.phone }}" class="underline">{{ place.phone }}</a></p>
+      {% endif %}
+
+      {% if place.website %}
+      <p class="text-xs text-gray-600 mt-1">Website: 
+        <a target="_blank" href="{{ place.website }}" class="underline">{{ place.website }}</a>
+      </p>
+      {% endif %}
+    </div>
+
+    <div>
+      <h4 class="text-sm font-semibold text-gray-700">Practical Info</h4>
+      <ul class="text-xs text-gray-600 mt-1 space-y-1">
+        <li>Entry: {{ place.entryFee or "Free / not specified" }}</li>
+        <li>Best time: {{ place.bestTime or "Anytime" }}</li>
+        <li>Category: {{ place.category or place.type or "N/A" }}</li>
+      </ul>
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+/* Thumbnail click → updates main image */
+function setHeroImage(url) {
+  const hero = document.getElementById('hero-img');
+  if (hero) hero.src = url;
+}
+
+/* Crowd prediction fetcher */
+async function loadCrowdPrediction() {
+  const city = "{{ place.city_slug or place.city or place.city_slug|default('') }}";
+  const valueEl = document.getElementById('crowd-value');
+  const badgeEl = document.getElementById('crowd-badge');
+  const msgEl = document.getElementById('crowd-message');
+  const errEl = document.getElementById('crowd-error');
+  errEl.classList.add('hidden');
+  msgEl.textContent = 'Predicting crowd...';
+  badgeEl.textContent = 'Loading...';
+  valueEl.textContent = '—';
+
+  if (!city) {
+    badgeEl.textContent = 'N/A';
+    msgEl.textContent = 'City information not available for crowd prediction.';
+    return;
+  }
+
+  try {
+    const res = await fetch(`/predict_crowd?city=${encodeURIComponent(city)}`);
+    if (!res.ok) {
+      const t = await res.json().catch(()=>({}));
+      throw new Error(t.error || `HTTP ${res.status}`);
+    }
+    const d = await res.json();
+
+    const crowd = (typeof d.predicted_crowd !== 'undefined') ? Number(d.predicted_crowd) : null;
+    const message = d.message || '';
+
+    if (crowd === null || isNaN(crowd)) {
+      throw new Error('Invalid response from server');
+    }
+
+    // Set value
+    valueEl.textContent = `${Math.round(crowd)}%`;
+
+    // Color and badge text based on crowd
+    if (crowd > 75) {
+      badgeEl.textContent = 'High';
+      badgeEl.className = 'text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700';
+      valueEl.className = 'text-2xl font-bold text-red-700';
+    } else if (crowd < 40) {
+      badgeEl.textContent = 'Low';
+      badgeEl.className = 'text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700';
+      valueEl.className = 'text-2xl font-bold text-green-700';
+    } else {
+      badgeEl.textContent = 'Moderate';
+      badgeEl.className = 'text-xs font-semibold px-2 py-1 rounded-full bg-yellow-100 text-yellow-800';
+      valueEl.className = 'text-2xl font-bold text-yellow-800';
+    }
+
+    msgEl.textContent = message;
+  } catch (err) {
+    console.error("Crowd fetch failed", err);
+    errEl.textContent = `Could not fetch crowd prediction: ${err.message || err}`;
+    errEl.classList.remove('hidden');
+    badgeEl.textContent = 'Error';
+    badgeEl.className = 'text-xs font-semibold px-2 py-1 rounded-full bg-gray-200 text-gray-700';
+    msgEl.textContent = '';
+    valueEl.textContent = '—';
+  }
+}
+
+/* Load on page ready */
+document.addEventListener('DOMContentLoaded', () => {
+  loadCrowdPrediction();
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Travel Buddy - Smart Travel Assistant</title>
+
+  <!-- serve favicon via Flask static -->
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body { 
+      font-family: 'Poppins', sans-serif; 
+      /* bottom nav removed, no extra padding needed */
+    }
+    #miniMap { height: 300px; border-radius: 12px; }
+    .hero-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); }
+    .feature-card { transition: all 0.3s ease; }
+    .feature-card:hover { transform: translateY(-10px); }
+    .glass-effect { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+    .animated-bg { background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab); background-size: 400% 400%; animation: gradient 15s ease infinite; }
+    @keyframes gradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    .floating { animation: floating 3s ease-in-out infinite; }
+    @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+
+    .search-button { 
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+    }
+    .search-button:hover { 
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+
+  <!-- ===== NAV with PROFILE LINK (Flask-friendly) ===== -->
+  <nav class="bg-white shadow-lg sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-4">
+        <div class="flex items-center space-x-3">
+          <div class="animated-bg p-2 rounded-lg">
+            <i data-feather="compass" class="h-6 w-6 text-white"></i>
+          </div>
+          <a href="{{ url_for('home') }}" class="text-xl font-bold text-gray-900">Travel Buddy</a>
+        </div>
+
+        <!-- Desktop nav + profile -->
+        <div class="hidden md:flex items-center space-x-6">
+          <div class="flex space-x-6 mr-6">
+            <!-- internal anchors for same-page sections -->
+            <a href="#home" class="text-indigo-600 font-semibold hover:text-indigo-800 transition">Home</a>
+            <a href="#features" class="text-gray-700 hover:text-indigo-600 transition">Features</a>
+            <a href="#quick-actions" class="text-gray-700 hover:text-indigo-600 transition">Quick Actions</a>
+            <!-- Contact removed -->
+          </div>
+
+          <!-- Profile button as Flask link -->
+          <a href="{{ url_for('profile_page') }}" class="flex items-center gap-3 focus:outline-none">
+            <img src="https://i.pravatar.cc/40?img=3" alt="avatar" class="w-9 h-9 rounded-full border-2 border-gray-200">
+            <span class="hidden sm:inline text-sm font-medium text-gray-700">Account</span>
+          </a>
+        </div>
+
+        <!-- Mobile menu button -->
+        <div class="md:hidden flex items-center">
+          <button id="mobileMenuBtn" class="p-2 rounded-md focus:outline-none">
+            <i data-feather="menu" class="h-6 w-6"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile menu (Contact removed) -->
+    <div id="mobileMenu" class="hidden md:hidden bg-white border-t">
+      <div class="px-2 pt-2 pb-3 space-y-1">
+        <a href="#home" class="block px-3 py-2 text-indigo-600 font-semibold">Home</a>
+        <a href="#features" class="block px-3 py-2 text-gray-700 hover:text-indigo-600">Features</a>
+        <a href="#quick-actions" class="block px-3 py-2 text-gray-700 hover:text-indigo-600">Quick Actions</a>
+        <div class="border-t my-1"></div>
+        <a href="{{ url_for('profile_page') }}" class="block px-3 py-2 text-gray-700 hover:bg-gray-50">Profile</a>
+        <a href="{{ url_for('profile_page') }}#settings" class="block px-3 py-2 text-gray-700 hover:bg-gray-50">Settings</a>
+      </div>
+    </div>
+  </nav>
+  <!-- ===== END NAV ===== -->
+
+  <section id="home" class="hero-gradient text-white py-20 text-center relative overflow-hidden">
+    <div class="absolute inset-0 bg-black opacity-20"></div>
+    <div class="container mx-auto px-6 relative z-10">
+      <div class="floating">
+        <h1 class="text-5xl md:text-6xl font-bold mb-6" data-aos="fade-down">
+          Your Smart Travel Assistant
+        </h1>
+      </div>
+      <p class="text-xl md:text-2xl mb-10" data-aos="fade-down" data-aos-delay="100">
+        Plan, explore, and enjoy your journey with AI-powered recommendations
+      </p>
+      <div class="flex flex-col md:flex-row justify-center gap-6" data-aos="fade-up" data-aos-delay="200">
+        <!-- search-glow removed -->
+        <button onclick="openSearchPage()" class="search-button text-white font-bold rounded-full py-4 px-8 shadow-lg uppercase flex items-center justify-center">
+          <i data-feather="search" class="mr-2"></i>Search City
+        </button>
+        <button onclick="openCrowdPredictor()" class="bg-white text-indigo-600 font-bold rounded-full py-4 px-8 shadow-lg uppercase hover:bg-gray-100 transition transform hover:scale-105">
+          <i data-feather="users" class="inline mr-2"></i>Crowd Predictor
+        </button>
+        <button onclick="openAIPlanner()" class="bg-white text-indigo-600 font-bold rounded-full py-4 px-8 shadow-lg uppercase hover:bg-gray-100 transition transform hover:scale-105">
+          <i data-feather="cpu" class="inline mr-2"></i>AI Trip Planner
+        </button>
+      </div>
+    </div>
+    <div class="absolute bottom-0 left-0 right-0">
+      <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0V120Z" fill="#F9FAFB"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- QUICK ACTIONS -->
+  <section id="quick-actions" class="py-20 bg-white">
+    <div class="container mx-auto px-6">
+      <h2 class="text-4xl font-bold text-center text-gray-800 mb-16" data-aos="fade-up">Quick Actions</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="bg-white rounded-xl shadow-lg p-6" data-aos="fade-right">
+          <h3 class="text-2xl font-semibold mb-4 text-indigo-600">
+            <i data-feather="users" class="inline mr-2"></i>Crowd Predictor
+          </h3>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Select City</label>
+            <select id="quickCitySelect" class="w-full border rounded-lg px-4 py-2">
+              <option value="">Loading cities...</option>
+            </select>
+          </div>
+          <button onclick="quickCrowdPredict()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+            Predict Crowd Level
+          </button>
+          <div id="quickCrowdResult" class="mt-4 p-4 bg-gray-50 rounded-lg hidden">
+            <div class="flex items-center justify-between">
+              <span class="font-semibold">Predicted Crowd:</span>
+              <span id="quickCrowdLevel" class="text-2xl font-bold"></span>
+            </div>
+            <p id="quickCrowdMessage" class="mt-2 text-sm text-gray-600"></p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6" data-aos="fade-left">
+          <h3 class="text-2xl font-semibold mb-4 text-green-600">
+            <i data-feather="route" class="inline mr-2"></i>Quick Route Finder
+          </h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">From</label>
+              <select id="quickFromCity" class="w-full border rounded-lg px-4 py-2">
+                <option value="">Loading cities...</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">To</label>
+              <select id="quickToCity" class="w-full border rounded-lg px-4 py-2">
+                <option value="">Loading cities...</option>
+              </select>
+            </div>
+            <button onclick="quickRouteFind()" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition">
+              Find Route
+            </button>
+          </div>
+          <div id="quickRouteResult" class="mt-4 p-4 bg-gray-50 rounded-lg hidden">
+            <div class="flex items-center justify-between">
+              <span class="font-semibold">Distance:</span>
+              <span id="quickRouteDistance"></span>
+            </div>
+            <div class="flex items-center justify-between mt-2">
+              <span class="font-semibold">Time:</span>
+              <span id="quickRouteTime"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-8 bg-white rounded-xl shadow-lg p-6" data-aos="fade-up">
+        <h3 class="text-2xl font-semibold mb-4 text-purple-600">
+          <i data-feather="map-pin" class="inline mr-2"></i>Explore Map
+        </h3>
+        <div id="miniMap" class="rounded-lg"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="py-20 bg-gray-50">
+    <div class="container mx-auto px-6 text-center">
+      <h2 class="text-4xl font-bold text-gray-800 mb-16" data-aos="fade-up">Amazing Features</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div class="feature-card bg-gray-50 p-8 rounded-xl shadow-lg" data-aos="fade-up" data-aos-delay="100">
+          <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i data-feather="map" class="h-8 w-8 text-indigo-600"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Smart Route Planning</h3>
+          <p class="text-gray-600">Find the best routes using advanced path algorithms with real-time traffic and weather data.</p>
+        </div>
+        <div class="feature-card bg-gray-50 p-8 rounded-xl shadow-lg" data-aos="fade-up" data-aos-delay="200">
+          <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i data-feather="trending-up" class="h-8 w-8 text-green-600"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Crowd Prediction</h3>
+          <p class="text-gray-600">AI-powered crowd level predictions based on weather patterns and historical data.</p>
+        </div>
+        <div class="feature-card bg-gray-50 p-8 rounded-xl shadow-lg" data-aos="fade-up" data-aos-delay="300">
+          <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i data-feather="compass" class="h-8 w-8 text-purple-600"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Local Insights</h3>
+          <p class="text-gray-600">Discover local food, attractions, and best times to visit with curated recommendations.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- "What Users Say" section removed -->
+  <!-- "Get In Touch" / Contact section removed -->
+
+  <!-- Footer (restored as before) -->
+  <footer class="bg-gray-800 text-white py-10">
+    <div class="container mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <div class="flex items-center space-x-2">
+            <i data-feather="compass" class="h-6 w-6"></i>
+            <span class="text-xl font-bold">Travel Buddy</span>
+          </div>
+          <p class="text-sm text-gray-400 mt-2">© 2025 Travel Buddy — A Smart Travel Assistance</p>
+        </div>
+        <div class="flex space-x-6">
+          <a href="#" class="text-gray-400 hover:text-white transition">
+            <i data-feather="facebook" class="h-5 w-5"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition">
+            <i data-feather="twitter" class="h-5 w-5"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition">
+            <i data-feather="instagram" class="h-5 w-5"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition">
+            <i data-feather="linkedin" class="h-5 w-5"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script>
+    // Initialize AOS + Feather icons after DOM
+    document.addEventListener('DOMContentLoaded', function() {
+      AOS.init({ duration: 800 });
+      feather.replace();
+
+      // Mobile Menu Toggle (safe guard)
+      const mobileBtn = document.getElementById('mobileMenuBtn');
+      const mobileMenu = document.getElementById('mobileMenu');
+      if (mobileBtn && mobileMenu) {
+        mobileBtn.addEventListener('click', function() {
+          mobileMenu.classList.toggle('hidden');
+        });
+      }
+    });
+
+    // --- Global variables ---
+    let currentRouteLayer = null; // To store the line/markers
+    let currentSearchMarker = null; // To store the single city marker
+    let allCityCoordinates = {}; // To store all city coordinates
+    let miniMap;
+
+    // Custom Map Icons
+    const greenIcon = new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+    const redIcon = new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+    const blueIcon = new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+
+    // Initialize Mini Map
+    function initMiniMap() {
+      if (!miniMap) {
+        miniMap = L.map('miniMap').setView([15.1394, 76.9214], 10); // Centered on Ballari
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(miniMap);
+      }
+    }
+
+    // Populate City Dropdowns
+    async function populateCityDropdowns() {
+      try {
+        const response = await fetch('/get-locations'); // relative API path (Flask should provide)
+        if (!response.ok) throw new Error('Network response was not ok');
+        const cities = await response.json();
+        
+        const selects = [
+          document.getElementById('quickCitySelect'),
+          document.getElementById('quickFromCity'),
+          document.getElementById('quickToCity')
+        ];
+        
+        selects.forEach(select => {
+          if (!select) return;
+          select.innerHTML = ''; // Clear
+          if(select.id !== 'quickCitySelect') {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = "Select city";
+            select.appendChild(defaultOption);
+          }
+        });
+
+        cities.forEach(city => {
+          selects.forEach(select => {
+            if (!select) return;
+            const option = document.createElement('option');
+            option.value = city;
+            option.textContent = city;
+            select.appendChild(option);
+          });
+        });
+
+      } catch (e) {
+        console.error("Failed to load cities", e);
+      }
+    }
+
+    // Fetch All City Coordinates
+    async function fetchAllCityCoordinates() {
+        try {
+            const response = await fetch('/get-city-coordinates');
+            if (!response.ok) throw new Error('Network response was not ok');
+            allCityCoordinates = await response.json();
+            console.log("Loaded all city coordinates");
+        } catch (e) {
+            console.error("Failed to load city coordinates", e);
+        }
+    }
+
+    // Initialize when window loads
+    window.addEventListener('load', function() {
+      initMiniMap();
+      populateCityDropdowns();
+      fetchAllCityCoordinates();
+    });
+
+    // Navigation helpers
+    function openSearchPage() {
+      window.location.href = "{{ url_for('search_page') }}";
+    }
+    function openCrowdPredictor() {
+      const el = document.getElementById('quick-actions');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+    function openAIPlanner() {
+      window.location.href = "{{ url_for('ai_planner') }}";
+    }
+
+    // Search bar action on homepage (if you add an input later)
+    function searchFromHomepage() {
+      const input = document.getElementById('homepageCityInput');
+      const city = input ? input.value.trim() : '';
+      if (city) {
+        sessionStorage.setItem('searchQuery', city);
+        window.location.href = "{{ url_for('search_page') }}";
+      } else {
+        alert('Please enter a city name');
+      }
+    }
+    document.addEventListener('keydown', function(e) {
+      const input = document.getElementById('homepageCityInput');
+      if (input && document.activeElement === input && e.key === 'Enter') {
+        e.preventDefault();
+        searchFromHomepage();
+      }
+    });
+
+    // Quick Crowd Prediction
+    async function quickCrowdPredict() {
+      const city = document.getElementById('quickCitySelect')?.value;
+      if (!city) { alert("Please select a city."); return; }
+      const resultDiv = document.getElementById('quickCrowdResult');
+      const levelSpan = document.getElementById('quickCrowdLevel');
+      const messageP = document.getElementById('quickCrowdMessage');
+      try {
+        const response = await fetch("{{ url_for('predict_crowd_route') }}?city=" + encodeURIComponent(city));
+        const data = await response.json();
+        if (data.error) { alert(data.error); return; }
+        levelSpan.textContent = data.predicted_crowd + '%';
+        messageP.textContent = data.message;
+        if (data.predicted_crowd > 75) levelSpan.className = 'text-2xl font-bold text-red-600';
+        else if (data.predicted_crowd > 50) levelSpan.className = 'text-2xl font-bold text-yellow-600';
+        else levelSpan.className = 'text-2xl font-bold text-green-600';
+        resultDiv.classList.remove('hidden');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error fetching crowd prediction. Is the Python server running?');
+      }
+    }
+
+    // Quick Route Finder
+    async function quickRouteFind() {
+      if (currentSearchMarker) { miniMap.removeLayer(currentSearchMarker); currentSearchMarker = null; }
+      if (currentRouteLayer) { miniMap.removeLayer(currentRouteLayer); currentRouteLayer = null; }
+
+      const fromCity = document.getElementById('quickFromCity')?.value;
+      const toCity = document.getElementById('quickToCity')?.value;
+      const resultDiv = document.getElementById('quickRouteResult');
+      const distanceSpan = document.getElementById('quickRouteDistance');
+      const timeSpan = document.getElementById('quickRouteTime');
+
+      if (!fromCity || !toCity) { alert('Please select both cities'); return; }
+
+      try {
+        const response = await fetch('/find-route', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ from_city: fromCity, to_city: toCity })
+        });
+        const data = await response.json();
+        if (data.error) { alert(data.error); resultDiv.classList.add('hidden'); return; }
+        if (!data.routes || data.routes.length === 0) { alert("No routes found."); resultDiv.classList.add('hidden'); return; }
+
+        const bestRoute = data.routes[0];
+        const pathCities = bestRoute.path || [];
+        const pathCoords = bestRoute.coordinates || [];
+
+        const routeGroup = L.layerGroup();
+
+        pathCities.forEach((city, index) => {
+          const coords = allCityCoordinates[city];
+          if (!coords) return;
+          let icon = blueIcon;
+          if (index === 0) icon = greenIcon;
+          else if (index === pathCities.length - 1) icon = redIcon;
+          L.marker(coords, { icon }).addTo(routeGroup).bindPopup(`<b>${index + 1}. ${city}</b>`);
+        });
+
+        if (pathCoords && pathCoords.length > 1) {
+          const polyline = L.polyline(pathCoords, { color: 'red', weight: 3 }).addTo(routeGroup);
+          routeGroup.addTo(miniMap);
+          miniMap.fitBounds(polyline.getBounds(), { padding: [50,50] });
+        } else {
+          routeGroup.addTo(miniMap);
+        }
+
+        currentRouteLayer = routeGroup;
+        distanceSpan.textContent = bestRoute.distance + ' km';
+        timeSpan.textContent = bestRoute.time;
+        resultDiv.classList.remove('hidden');
+
+      } catch (error) {
+        console.error('Error finding A* route:', error);
+        alert('Error finding route. Is the Python server running?');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Settings — Travel Buddy</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header (same nav style as profile) -->
+  <header class="bg-white shadow-sm sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+          <i data-feather="compass" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <a href="{{ url_for('home') }}" class="text-lg font-bold text-gray-900">Travel Buddy</a>
+          <div class="text-xs text-gray-500">Account & settings</div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 text-sm">
+        <a href="{{ url_for('home') }}" class="text-gray-600 hover:underline">Home</a>
+        <a href="{{ url_for('profile_page') }}" class="text-gray-600 hover:underline">Profile</a>
+        <a href="{{ url_for('search_page') }}" class="text-gray-600 hover:underline">Search</a>
+        <a href="{{ url_for('settings_page') }}" class="text-gray-900 font-semibold hover:underline">Settings</a>
+        <a href="{{ url_for('history_page') }}" class="text-gray-600 hover:underline">History</a>
+        {% if session.get('user_email') %}
+          <a href="{{ url_for('logout') }}" class="text-red-600 hover:underline">Logout</a>
+        {% else %}
+          <a href="{{ url_for('login_page') }}" class="text-gray-600 hover:underline">Login</a>
+          <a href="{{ url_for('signup_page') }}" class="text-gray-600 hover:underline">Sign up</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+
+    <!-- Page header card -->
+    <section class="bg-white rounded-xl shadow p-4 md:p-5 flex flex-col gap-1">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Account</p>
+      <h1 class="text-xl md:text-2xl font-bold text-gray-900">Settings</h1>
+      <p class="text-sm text-gray-600">
+        View your profile, update your details, and manage privacy, appearance, and security settings.
+      </p>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <!-- LEFT: small profile summary & menu -->
+      <aside class="lg:col-span-1 bg-white rounded-xl shadow p-5 flex flex-col gap-4">
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-xl font-semibold">
+            {{ (user_name.split()[0][0] + user_name.split()[-1][0]).upper() if user_name else "C" }}
+          </div>
+          <div class="text-center text-sm">
+            <p class="font-semibold text-gray-900">
+              {{ user_name or 'chetan' }}
+            </p>
+            <p class="text-xs text-gray-500">
+              {{ user_email or 'cs@email.com' }}
+            </p>
+            <div class="mt-1 inline-flex items-center px-2 py-0.5 rounded-full bg-indigo-50 text-[11px] text-indigo-700">
+              <i data-feather="clock" class="w-3 h-3 mr-1"></i>
+              Asia/Kolkata
+            </div>
+          </div>
+        </div>
+
+        <nav class="text-sm">
+          <p class="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Profile menu</p>
+          <div class="flex flex-col gap-1">
+            <a href="{{ url_for('profile_page') }}"
+               class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50">
+              <span class="flex items-center gap-2">
+                <i data-feather="user" class="w-4 h-4"></i> Overview
+              </span>
+            </a>
+            <a href="{{ url_for('profile_page') }}#edit"
+               class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50">
+              <span class="flex items-center gap-2">
+                <i data-feather="edit-3" class="w-4 h-4"></i> Edit profile
+              </span>
+            </a>
+            <div
+               class="flex items-center justify-between px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-medium">
+              <span class="flex items-center gap-2">
+                <i data-feather="settings" class="w-4 h-4"></i> Settings
+              </span>
+            </div>
+          </div>
+        </nav>
+
+        <p class="text-[11px] text-gray-500 border-t pt-3 mt-2">
+          Profile data is stored in MongoDB via the Flask API (<code>http://127.0.0.1:5000/api</code>).
+        </p>
+      </aside>
+
+      <!-- RIGHT: settings cards -->
+      <section class="lg:col-span-3 space-y-4">
+
+        <!-- Privacy & Appearance/Password (like screenshot) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <!-- Privacy -->
+          <div class="bg-white rounded-xl shadow p-4 space-y-3 text-sm">
+            <h2 class="text-sm font-semibold flex items-center gap-2">
+              <i data-feather="shield" class="w-4 h-4"></i>
+              Privacy
+            </h2>
+            <p class="text-xs text-gray-500">
+              Control how Travel Buddy stores your app usage and basic profile info.
+            </p>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" class="rounded border-gray-300">
+              <span>Allow saving route search history</span>
+            </label>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" class="rounded border-gray-300">
+              <span>Show basic profile info inside app</span>
+            </label>
+            <p class="text-[11px] text-gray-400 pt-1 border-t">
+              (Right now these switches are only UI — you can wire them to MongoDB later.)
+            </p>
+          </div>
+
+          <!-- Appearance + Password & security -->
+          <div class="bg-white rounded-xl shadow p-4 space-y-4 text-sm">
+            <div>
+              <h2 class="text-sm font-semibold flex items-center gap-2">
+                <i data-feather="moon" class="w-4 h-4"></i>
+                Appearance
+              </h2>
+              <p class="text-xs text-gray-500">
+                Choose a basic UI preference. Later you can store this in the database.
+              </p>
+              <label class="flex items-center gap-2 text-sm mt-2">
+                <input type="checkbox" class="rounded border-gray-300">
+                <span>Enable dark mode (UI only)</span>
+              </label>
+            </div>
+
+            <div class="border-t pt-3">
+              <h2 class="text-sm font-semibold flex items-center gap-2">
+                <i data-feather="lock" class="w-4 h-4"></i>
+                Password &amp; security
+              </h2>
+              <p class="text-xs text-gray-500 mb-2">
+                To change your login password, use the secure reset flow.
+              </p>
+              <a href="{{ url_for('forgot_password') }}"
+                 class="inline-flex items-center px-3 py-1.5 rounded-full bg-indigo-600 text-white text-xs hover:brightness-95">
+                <i data-feather="key" class="w-3 h-3 mr-1"></i>
+                Change password
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- About Travel Buddy (moved from idea of index “about”) -->
+        <div class="bg-white rounded-xl shadow p-4 space-y-2 text-sm">
+          <h2 class="text-sm font-semibold flex items-center gap-2">
+            <i data-feather="info" class="w-4 h-4"></i>
+            About Travel Buddy
+          </h2>
+          <p class="text-xs text-gray-500">
+            Travel Buddy is a mini-project web app that helps you discover cities like Ballari, Hospet and Hampi.
+            It shows curated places, food spots, live weather information, and Google Maps directions — all in
+            one interface.
+          </p>
+          <p class="text-xs text-gray-500">
+            Tech stack: Flask, MongoDB, HTML, Tailwind CSS, and APIs (like OpenWeather). You can extend it later
+            with user reviews, favourites, trip planning and more cities.
+          </p>
+        </div>
+
+        <!-- Contact & Support (this replaces “Get in touch” from index) -->
+        <div class="bg-white rounded-xl shadow p-4 space-y-3 text-sm">
+          <h2 class="text-sm font-semibold flex items-center gap-2">
+            <i data-feather="mail" class="w-4 h-4"></i>
+            Contact &amp; support
+          </h2>
+          <p class="text-xs text-gray-500">
+            Found a bug or want to suggest a new feature (like new city, more filters, or better UI)?
+            Reach out using the details below.
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-1 text-xs">
+              <p class="font-semibold text-gray-800">Project owner</p>
+              <p class="text-gray-600">Name: {{ user_name or 'chetan' }}</p>
+              <p class="text-gray-600">Email: {{ user_email or 'cs@email.com' }}</p>
+            </div>
+
+            <form class="space-y-2 text-xs">
+              <label class="block text-[11px] text-gray-600">
+                Message
+                <textarea
+                  class="mt-1 w-full rounded-lg border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  rows="3"
+                  placeholder="Type your feedback or issue here (UI only, not wired yet)">
+                </textarea>
+              </label>
+              <button
+                type="button"
+                class="inline-flex items-center px-3 py-1.5 rounded-full bg-indigo-600 text-white text-xs hover:brightness-95">
+                <i data-feather="send" class="w-3 h-3 mr-1"></i>
+                Send (demo only)
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </section>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      feather.replace();
+    });
+  </script>
+</body>
+</html>

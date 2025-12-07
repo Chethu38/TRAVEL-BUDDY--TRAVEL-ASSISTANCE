@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Travel History — Travel Buddy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+      background:#0f172a;
+      color:#e5e7eb;
+      min-height:100vh;
+      padding:1.5rem;
+    }
+    .wrap{
+      max-width:720px;
+      margin:0 auto;
+    }
+    h1{
+      font-size:1.5rem;
+      margin-bottom:0.3rem;
+    }
+    .sub{
+      font-size:0.9rem;
+      opacity:0.8;
+      margin-bottom:1rem;
+    }
+    a.link{
+      color:#38bdf8;
+      text-decoration:none;
+      font-size:0.9rem;
+    }
+    a.link:hover{text-decoration:underline;}
+    ul{
+      list-style:none;
+      margin-top:1rem;
+    }
+    li{
+      padding:0.6rem 0;
+      border-bottom:1px solid #111827;
+      font-size:0.9rem;
+    }
+    .meta{
+      font-size:0.78rem;
+      opacity:0.7;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Your Search History</h1>
+    <div class="sub">
+      Logged in as <strong>{{ email }}</strong> ·
+      <a href="{{ url_for('home') }}" class="link">Back to app</a>
+    </div>
+
+    {% if history %}
+      <ul>
+        {% for h in history %}
+          {% set m = h.meta if h.meta is defined else h["meta"] %}
+          <li>
+            <div>
+              {{ m.from if m.from is defined else m["from"] }}
+              →
+              {{ m.to if m.to is defined else m["to"] }}
+            </div>
+            <div class="meta">
+              {{ h.ts }} ·
+              {% if m.distance_km is defined %}
+                {{ m.distance_km }} km
+              {% elif "distance_km" in m %}
+                {{ m["distance_km"] }} km
+              {% else %}
+                distance unknown
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="sub">No route searches yet. Try searching some routes from the main page.</p>
+    {% endif %}
+  </div>
+</body>
+</html>

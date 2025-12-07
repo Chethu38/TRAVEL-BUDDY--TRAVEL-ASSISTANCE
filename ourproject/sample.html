@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Profile — Travel Buddy</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+    .avatar-placeholder { background: linear-gradient(135deg,#e2e8f0,#c7d2fe); }
+    .tab-hidden { display: none; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white shadow-sm sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+          <i data-feather="compass" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <a href="{{ url_for('home') }}" class="text-lg font-bold text-gray-900">Travel Buddy</a>
+          <div class="text-xs text-gray-500">Account & settings</div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 text-sm">
+        <a href="{{ url_for('home') }}" class="text-indigo-600 hover:underline">Home</a>
+        <a href="{{ url_for('profile_page') }}" class="text-gray-900 font-semibold hover:underline">Profile</a>
+        <a href="{{ url_for('search_page') }}" class="text-gray-600 hover:underline">Search</a>
+        <a href="{{ url_for('settings_page') }}" class="text-gray-600 hover:underline">Settings</a>
+        <a href="{{ url_for('history_page') }}" class="text-gray-600 hover:underline">History</a>
+        {% if session.get('user_email') %}
+          <a href="{{ url_for('logout') }}" class="text-red-600 hover:underline">Logout</a>
+        {% else %}
+          <a href="{{ url_for('login_page') }}" class="text-gray-600 hover:underline">Login</a>
+          <a href="{{ url_for('signup_page') }}" class="text-gray-600 hover:underline">Sign up</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="max-w-6xl mx-auto p-4 md:p-6">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+      <!-- LEFT SIDEBAR: avatar + basic info + menu -->
+      <aside class="lg:col-span-1 bg-white rounded-xl shadow p-5 flex flex-col gap-5">
+        <div class="flex flex-col items-center">
+          <div id="avatarWrap" class="w-28 h-28 rounded-full overflow-hidden avatar-placeholder flex items-center justify-center">
+            <img id="avatarPreview" class="w-full h-full object-cover hidden" alt="avatar preview" />
+            <div id="avatarInitials" class="text-3xl font-bold text-white">
+              <!-- initials set by JS -->
+            </div>
+          </div>
+
+          <button id="avatarUploadBtn"
+                  class="mt-4 inline-flex items-center px-4 py-2 border rounded-md text-xs md:text-sm cursor-pointer hover:bg-gray-50">
+            <i data-feather="upload" class="mr-2 w-4 h-4"></i>
+            Change avatar
+          </button>
+          <input id="avatarInput" type="file" accept="image/*" class="hidden" />
+
+          <button type="button" id="removeAvatarBtn"
+                  class="mt-2 px-3 py-1 border rounded text-xs text-red-600 hidden">
+            Remove avatar
+          </button>
+        </div>
+
+        <div class="text-center text-sm">
+          <div class="font-semibold text-gray-900" id="sidebarName">
+            {{ user_name or 'Explorer' }}
+          </div>
+          <div class="text-gray-500 text-xs" id="sidebarEmail">
+            {{ user_email }}
+          </div>
+          <div class="mt-1 inline-flex items-center px-2 py-0.5 rounded-full bg-indigo-50 text-[11px] text-indigo-700">
+            <i data-feather="clock" class="w-3 h-3 mr-1"></i>
+            <span id="sidebarTimezone">Asia/Kolkata</span>
+          </div>
+        </div>
+
+        <nav class="text-sm">
+          <p class="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Profile menu</p>
+          <div class="flex flex-col gap-1">
+            <button data-tab="overviewTab"
+                    class="tab-btn flex items-center justify-between px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-medium">
+              <span class="flex items-center gap-2">
+                <i data-feather="user" class="w-4 h-4"></i> Overview
+              </span>
+            </button>
+
+            <button data-tab="editTab"
+                    class="tab-btn flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50">
+              <span class="flex items-center gap-2">
+                <i data-feather="edit-3" class="w-4 h-4"></i> Edit profile
+              </span>
+            </button>
+
+            <!-- CHANGED: this now links to settings page instead of switching tab -->
+            <a href="{{ url_for('settings_page') }}"
+               class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50">
+              <span class="flex items-center gap-2">
+                <i data-feather="settings" class="w-4 h-4"></i> Settings
+              </span>
+            </a>
+          </div>
+        </nav>
+
+        <div class="text-[11px] text-gray-500 border-t pt-3 mt-2">
+          Profile data is stored in MongoDB via the Flask API (<code>http://127.0.0.1:5000/api</code>).
+        </div>
+      </aside>
+
+      <!-- RIGHT CONTENT -->
+      <section class="lg:col-span-3 space-y-4">
+
+        <!-- TOP header text -->
+        <div class="bg-white rounded-xl shadow p-4 md:p-5">
+          <h1 class="text-xl md:text-2xl font-bold mb-1">Account</h1>
+          <p class="text-sm text-gray-600">
+            View your profile, update your details, and manage privacy & security settings.
+          </p>
+        </div>
+
+        <!-- OVERVIEW TAB -->
+        <div id="overviewTab" class="bg-white rounded-xl shadow p-4 md:p-5 space-y-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-semibold">Profile overview</h2>
+              <p class="text-xs text-gray-500">Your basic information at a glance.</p>
+            </div>
+            <button data-tab="editTab"
+                    class="tab-btn-inline text-xs inline-flex items-center px-3 py-1.5 rounded-full bg-indigo-600 text-white">
+              <i data-feather="edit-2" class="w-3 h-3 mr-1"></i>
+              Edit profile
+            </button>
+          </div>
+
+          <div class="border rounded-lg p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p class="text-gray-500 text-xs uppercase mb-1">Full name</p>
+              <p id="ov-name" class="font-medium text-gray-900">—</p>
+            </div>
+            <div>
+              <p class="text-gray-500 text-xs uppercase mb-1">Email</p>
+              <p id="ov-email" class="font-medium text-gray-900 break-all">—</p>
+            </div>
+            <div>
+              <p class="text-gray-500 text-xs uppercase mb-1">Phone</p>
+              <p id="ov-phone" class="font-medium text-gray-900">—</p>
+            </div>
+            <div>
+              <p class="text-gray-500 text-xs uppercase mb-1">Timezone</p>
+              <p id="ov-timezone" class="font-medium text-gray-900">Asia/Kolkata</p>
+            </div>
+            <div class="md:col-span-2">
+              <p class="text-gray-500 text-xs uppercase mb-1">Bio</p>
+              <p id="ov-bio" class="text-gray-800 text-sm whitespace-pre-line">No bio yet.</p>
+            </div>
+          </div>
+
+          <!-- Recent history -->
+          <div class="mt-5">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-semibold">Recent route searches</h3>
+              <a href="{{ url_for('history_page') }}" class="text-xs text-indigo-600 hover:underline">
+                View full history
+              </a>
+            </div>
+            <div id="historyList" class="text-sm text-gray-700 border rounded-lg p-3 space-y-2">
+              <p class="text-xs text-gray-400 italic">Loading history...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- EDIT PROFILE TAB -->
+        <div id="editTab" class="bg-white rounded-xl shadow p-4 md:p-5 tab-hidden">
+          <h2 class="text-lg font-semibold mb-1">Edit profile</h2>
+          <p class="text-xs text-gray-500 mb-4">Update your basic information.</p>
+
+          <form id="profileForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Full name</label>
+              <input id="fullName"
+                     type="text"
+                     class="mt-1 w-full border rounded px-3 py-2 text-sm"
+                     required
+                     value="{{ user_name or '' }}">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Email</label>
+              <input id="email"
+                     type="email"
+                     class="mt-1 w-full border rounded px-3 py-2 text-sm"
+                     required
+                     value="{{ user_email or '' }}">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Phone</label>
+              <input id="phone"
+                     type="tel"
+                     class="mt-1 w-full border rounded px-3 py-2 text-sm"
+                     placeholder="+91 98765 43210">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Timezone</label>
+              <select id="timezone" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                <option value="Asia/Kolkata">Asia/Kolkata</option>
+                <option value="UTC">UTC</option>
+                <option value="Europe/London">Europe/London</option>
+                <option value="America/New_York">America/New_York</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Bio</label>
+              <textarea id="bio" rows="3" class="mt-1 w-full border rounded px-3 py-2 text-sm"
+                        placeholder="Tell us a bit about you as a traveller..."></textarea>
+            </div>
+
+            <div class="md:col-span-2 flex items-center gap-3 mt-2">
+              <button id="saveBtn" type="button"
+                      class="bg-indigo-600 text-white px-4 py-2 rounded font-semibold text-sm hover:brightness-95">
+                Save changes
+              </button>
+              <button id="loadBtn" type="button"
+                      class="border px-4 py-2 rounded text-sm">
+                Reload from server
+              </button>
+              <div id="status" class="ml-auto text-xs text-green-600 hidden">Saved ✓</div>
+            </div>
+          </form>
+        </div>
+
+        <!-- SETTINGS TAB (still here, but no tab button points to it now) -->
+        <div id="settingsTab" class="bg-white rounded-xl shadow p-4 md:p-5 tab-hidden">
+          <h2 class="text-lg font-semibold mb-1">Settings</h2>
+          <p class="text-xs text-gray-500 mb-4">Control privacy, appearance, and security.</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <!-- Privacy -->
+            <div class="border rounded-lg p-4 space-y-3 text-sm">
+              <h3 class="font-semibold mb-1 flex items-center gap-2">
+                <i data-feather="shield" class="w-4 h-4"></i>
+                Privacy
+              </h3>
+              <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" id="privacyHistory" class="rounded">
+                <span>Allow saving route search history</span>
+              </label>
+              <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" id="privacyProfilePublic" class="rounded">
+                <span>Show basic profile info inside app</span>
+              </label>
+              <p class="text-xs text-gray-400">
+                (Right now these switches are only UI — you can wire them to database later.)
+              </p>
+            </div>
+
+            <!-- Appearance + Password -->
+            <div class="border rounded-lg p-4 space-y-4 text-sm">
+              <div>
+                <h3 class="font-semibold mb-1 flex items-center gap-2">
+                  <i data-feather="moon" class="w-4 h-4"></i>
+                  Appearance
+                </h3>
+                <label class="flex items-center gap-2 text-sm">
+                  <input type="checkbox" id="darkModeToggle" class="rounded">
+                  <span>Enable dark mode (UI only)</span>
+                </label>
+                <p class="text-xs text-gray-400 mt-1">
+                  You can later store this preference in Mongo and toggle actual dark theme.
+                </p>
+              </div>
+
+              <div class="border-t pt-3">
+                <h3 class="font-semibold mb-1 flex items-center gap-2">
+                  <i data-feather="lock" class="w-4 h-4"></i>
+                  Password & security
+                </h3>
+                <p class="text-xs text-gray-500 mb-2">
+                  To change your login password, use the secure reset flow.
+                </p>
+                <a href="{{ url_for('forgot_password') }}"
+                   class="inline-flex items-center px-3 py-1.5 rounded-full bg-indigo-600 text-white text-xs hover:brightness-95">
+                  <i data-feather="key" class="w-3 h-3 mr-1"></i>
+                  Change password
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:5000/api";
+    const qs = sel => document.querySelector(sel);
+    const qsa = sel => Array.from(document.querySelectorAll(sel));
+
+    // Elements
+    const avatarInput = qs("#avatarInput");
+    const avatarPreview = qs("#avatarPreview");
+    const avatarWrap = qs("#avatarWrap");
+    const avatarInitials = qs("#avatarInitials");
+    const removeAvatarBtn = qs("#removeAvatarBtn");
+    const avatarUploadBtn = qs("#avatarUploadBtn");
+
+    const fullName = qs("#fullName");
+    const email = qs("#email");
+    const phone = qs("#phone");
+    const bio = qs("#bio");
+    const timezone = qs("#timezone");
+
+    const sidebarName = qs("#sidebarName");
+    const sidebarEmail = qs("#sidebarEmail");
+    const sidebarTimezone = qs("#sidebarTimezone");
+
+    const ovName = qs("#ov-name");
+    const ovEmail = qs("#ov-email");
+    const ovPhone = qs("#ov-phone");
+    const ovTimezone = qs("#ov-timezone");
+    const ovBio = qs("#ov-bio");
+
+    const saveBtn = qs("#saveBtn");
+    const loadBtn = qs("#loadBtn");
+    const status = qs("#status");
+    const historyList = qs("#historyList");
+
+    let currentAvatarDataUrl = null;
+
+    // Avatar handling
+    avatarUploadBtn.addEventListener("click", () => avatarInput.click());
+
+    avatarInput.addEventListener("change", ev => {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        currentAvatarDataUrl = e.target.result;
+        avatarPreview.src = currentAvatarDataUrl;
+        avatarPreview.classList.remove("hidden");
+        avatarInitials.classList.add("hidden");
+        removeAvatarBtn.classList.remove("hidden");
+      };
+      reader.readAsDataURL(file);
+    });
+
+    removeAvatarBtn.addEventListener("click", () => {
+      currentAvatarDataUrl = null;
+      avatarPreview.src = "";
+      avatarPreview.classList.add("hidden");
+      avatarInitials.classList.remove("hidden");
+      removeAvatarBtn.classList.add("hidden");
+    });
+
+    function setInitials(name) {
+      const parts = (name || "").trim().split(/\s+/);
+      const letters = parts.length >= 2 ? parts[0][0] + parts[1][0] : (parts[0] ? parts[0][0] : "");
+      avatarInitials.textContent = letters.toUpperCase();
+    }
+
+    function showStatus(msg) {
+      status.textContent = msg;
+      status.classList.remove("hidden");
+      setTimeout(() => status.classList.add("hidden"), 2000);
+    }
+
+    // TAB switching
+    function activateTab(id) {
+      ["overviewTab","editTab","settingsTab"].forEach(tabId => {
+        const el = qs("#" + tabId);
+        if (!el) return;
+        if (tabId === id) {
+          el.classList.remove("tab-hidden");
+        } else {
+          el.classList.add("tab-hidden");
+        }
+      });
+
+      qsa(".tab-btn").forEach(btn => {
+        const tab = btn.getAttribute("data-tab");
+        if (tab === id) {
+          btn.classList.add("bg-indigo-50","text-indigo-700","font-medium");
+        } else {
+          btn.classList.remove("bg-indigo-50","text-indigo-700","font-medium");
+        }
+      });
+    }
+
+    // SAVE profile to /api/profile
+    async function saveProfile() {
+      const nameVal = fullName.value.trim();
+      const emailVal = email.value.trim().toLowerCase();
+
+      if (!nameVal || !emailVal) {
+        alert("Please enter name and email.");
+        return;
+      }
+
+      const payload = {
+        fullName: nameVal,
+        email: emailVal,
+        phone: (phone.value || "").trim(),
+        bio: (bio.value || "").trim(),
+        timezone: timezone.value,
+        avatarDataUrl: currentAvatarDataUrl
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/profile`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (!res.ok || !json.ok) {
+          alert("Error saving profile: " + (json.error || "Unknown error"));
+          return;
+        }
+        applyProfileToUI(json.user);
+        showStatus("Profile saved ✓");
+
+        // Optional: log profile_saved to history store
+        await fetch(`${API_BASE}/history`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: emailVal, action: "profile_saved", meta: {} })
+        }).catch(() => {});
+      } catch (e) {
+        console.error(e);
+        alert("Server error. Is Flask running?");
+      }
+    }
+
+    // LOAD profile from /api/profile
+    async function loadProfile() {
+      const mail = (email.value || "").trim().toLowerCase();
+      if (!mail) {
+        return; // nothing to load
+      }
+      try {
+        const res = await fetch(`${API_BASE}/profile?email=${encodeURIComponent(mail)}`);
+        const json = await res.json();
+        if (!res.ok || json.error) {
+          // no profile yet; use defaults
+          return;
+        }
+        applyProfileToUI(json.user);
+        showStatus("Loaded from server ✓");
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // LOAD history
+    async function loadHistory() {
+      const mail = (email.value || "").trim().toLowerCase();
+      if (!mail) {
+        historyList.innerHTML = `<p class="text-xs text-gray-400 italic">No email set yet.</p>`;
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/history?email=${encodeURIComponent(mail)}`);
+        const json = await res.json();
+        const items = json.history || [];
+
+        if (!items.length) {
+          historyList.innerHTML = `<p class="text-xs text-gray-400 italic">No route searches yet. Try searching from the map page.</p>`;
+          return;
+        }
+
+        const top = items.slice(0, 5);
+        historyList.innerHTML = "";
+        top.forEach(h => {
+          const meta = h.meta || {};
+          const from = meta.from || meta.from_city || "?";
+          const to = meta.to || meta.to_city || "?";
+          const distance = meta.distance_km != null ? ` — ${meta.distance_km} km` : "";
+          const when = h.ts ? new Date(h.ts * 1000 || h.ts).toLocaleString() : "";
+          const div = document.createElement("div");
+          div.className = "flex items-center justify-between text-xs md:text-sm";
+          div.innerHTML = `
+            <div>
+              <span class="font-medium">${from}</span>
+              <span class="mx-1 text-gray-400">→</span>
+              <span class="font-medium">${to}</span>
+              <span class="text-gray-500">${distance}</span>
+            </div>
+            <div class="text-[11px] text-gray-400">${when}</div>
+          `;
+          historyList.appendChild(div);
+        });
+      } catch (e) {
+        console.error(e);
+        historyList.innerHTML = `<p class="text-xs text-red-500">Could not load history.</p>`;
+      }
+    }
+
+    // Apply profile object to UI
+    function applyProfileToUI(p) {
+      if (!p) return;
+
+      fullName.value = p.fullName || "";
+      email.value = p.email || "";
+      phone.value = p.phone || "";
+      bio.value = p.bio || "";
+      timezone.value = p.timezone || "Asia/Kolkata";
+
+      // Sidebar + overview text
+      const nameVal = fullName.value || "Explorer";
+      const emailVal = email.value || "";
+      const tzVal = timezone.value || "Asia/Kolkata";
+      const bioVal = bio.value || "";
+
+      sidebarName.textContent = nameVal;
+      sidebarEmail.textContent = emailVal;
+      sidebarTimezone.textContent = tzVal;
+
+      ovName.textContent = nameVal || "—";
+      ovEmail.textContent = emailVal || "—";
+      ovPhone.textContent = phone.value || "—";
+      ovTimezone.textContent = tzVal || "—";
+      ovBio.textContent = bioVal || "No bio yet.";
+
+      setInitials(nameVal);
+
+      const avatar = p.avatarDataUrl || p.avatar || null;
+      if (avatar) {
+        currentAvatarDataUrl = avatar;
+        avatarPreview.src = avatar;
+        avatarPreview.classList.remove("hidden");
+        avatarInitials.classList.add("hidden");
+        removeAvatarBtn.classList.remove("hidden");
+      } else {
+        currentAvatarDataUrl = null;
+        avatarPreview.classList.add("hidden");
+        avatarInitials.classList.remove("hidden");
+        removeAvatarBtn.classList.add("hidden");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      feather.replace();
+
+      // Initial initials (from server-side name)
+      setInitials(fullName.value);
+
+      // Tab buttons (sidebar)
+      qsa(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const tab = btn.getAttribute("data-tab");
+          activateTab(tab);
+        });
+      });
+
+      // Inline "Edit profile" button in overview header
+      qsa(".tab-btn-inline").forEach(btn => {
+        btn.addEventListener("click", () => {
+          activateTab("editTab");
+        });
+      });
+
+      // Default tab
+      activateTab("overviewTab");
+
+      // Listeners
+      fullName.addEventListener("input", () => setInitials(fullName.value));
+
+      saveBtn.addEventListener("click", async () => {
+        await saveProfile();
+        await loadHistory(); // refresh history if needed
+      });
+      loadBtn.addEventListener("click", async () => {
+        await loadProfile();
+        await loadHistory();
+      });
+
+      // Initial auto load from server
+      (async () => {
+        await loadProfile();
+        await loadHistory();
+      })();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!-- templates/_header.html -->
+<header id="site-header" class="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50 transition-colors duration-300">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center py-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+        <i data-feather="compass"></i>
+      </div>
+      <a href="{{ url_for('home') }}" class="text-xl font-bold text-gray-900 dark:text-white">Travel Buddy</a>
+    </div>
+
+    <nav class="hidden md:flex items-center space-x-5 text-sm font-medium">
+      <a href="{{ url_for('home') }}" class="text-gray-700 dark:text-gray-200 hover:text-indigo-600">Home</a>
+      <a href="{{ url_for('search_page') }}" class="text-gray-700 dark:text-gray-200 hover:text-indigo-600">Search</a>
+      <a href="{{ url_for('ai_planner') }}" class="text-gray-700 dark:text-gray-200 hover:text-indigo-600">AI Planner</a>
+      <a href="{{ url_for('home') }}#features" class="text-gray-700 dark:text-gray-200 hover:text-indigo-600">Insights</a>
+      <a href="{{ url_for('settings_page') }}" class="text-gray-700 dark:text-gray-200 hover:text-indigo-600">Settings</a>
+      <a href="{{ url_for('profile_page') }}" class="text-gray-700 dark:text-gray-200 hover:text-indigo-600">Profile</a>
+
+      {% if session.get('user_email') %}
+        <a href="{{ url_for('auth_bp.logout') }}" class="text-gray-700 dark:text-gray-200 hover:text-indigo-600">Logout</a>
+      {% else %}
+        <a href="{{ url_for('login_page') }}" class="text-gray-700 dark:text-gray-200 hover:text-indigo-600">Login</a>
+        <a href="{{ url_for('signup_page') }}" class="text-gray-700 dark:text-gray-200 hover:text-indigo-600">Sign up</a>
+      {% endif %}
+    </nav>
+
+    <!-- mobile menu button (kept simple) -->
+    <div class="md:hidden">
+      <button id="mobile-menu-btn" aria-label="Open menu">
+        <i data-feather="menu"></i>
+      </button>
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    try { feather.replace(); } catch(e){}
+  });
+  </script>
+</header>

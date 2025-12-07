@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Travel Buddy - AI Trip Planner</title>
+
+  <!-- favicon served by Flask -->
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Poppins', sans-serif; }
+    .animated-bg { background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab); background-size: 400% 400%; animation: gradient 15s ease infinite; }
+    @keyframes gradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+    /* Styles for the AI Planner Form */
+    .ai-planner-container {
+      max-width:600px;
+      margin:40px auto;
+      background:white;
+      padding:25px;
+      border-radius:10px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.1);
+    }
+    .ai-planner-container label { display:block; margin-top:15px; font-weight:bold; color: #333; }
+    .ai-planner-container select, .ai-planner-container input {
+      width:100%; padding:10px; margin-top:5px;
+      border:1px solid #ccc; border-radius:6px; font-size:15px;
+    }
+    .ai-planner-container button {
+      margin-top:25px; width:100%; padding:12px;
+      background:#4caf50; border:none; color:white;
+      font-size:16px; border-radius:6px; cursor:pointer;
+      transition: background-color 0.3s ease;
+    }
+    .ai-planner-container button:hover {
+        background-color: #45a049;
+    }
+    #ai-result { 
+      margin-top:25px; 
+      padding:15px; 
+      background:#e8ffe8; 
+      border-radius:6px; 
+      display:none; 
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+
+  <!-- Header (Flask-friendly links) -->
+  <header class="bg-gray-900 shadow-lg sticky top-0 z-50">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center py-4">
+      <div class="flex items-center space-x-3">
+        <div class="animated-bg p-2 rounded-lg">
+          <i data-feather="compass" class="h-6 w-6 text-white"></i>
+        </div>
+        <a href="{{ url_for('home') }}" class="text-xl font-bold text-white">Travel Buddy</a>
+      </div>
+
+      <div class="hidden md:flex space-x-6">
+        <a href="{{ url_for('home') }}" class="text-purple-400 font-semibold transition">Home</a>
+        <a href="{{ url_for('search_page') }}" class="text-gray-300 hover:text-white transition">Search City</a>
+        <a href="{{ url_for('ai_planner') }}" class="px-3 py-2 rounded-md bg-indigo-600 text-white font-semibold shadow hover:brightness-95 transition">AI Planner</a>
+      </div>
+
+      <button id="mobileMenuBtn" class="md:hidden p-2 rounded-md focus:outline-none" aria-label="Toggle menu">
+        <i data-feather="menu" class="h-6 w-6 text-white"></i>
+      </button>
+    </nav>
+
+    <div id="mobileMenu" class="hidden md:hidden bg-gray-900 border-t border-gray-700">
+      <div class="px-2 pt-2 pb-3 space-y-1">
+        <a href="{{ url_for('home') }}" class="block px-3 py-2 text-purple-400 font-semibold">Home</a>
+        <a href="{{ url_for('search_page') }}" class="block px-3 py-2 text-gray-300 hover:text-white">Search City</a>
+        <a href="{{ url_for('ai_planner') }}" class="block px-3 py-2 bg-indigo-600 text-white font-semibold rounded">AI Planner</a>
+      </div>
+    </div>
+  </header>
+
+  <section id="home" class="py-12 flex-grow">
+    <div class="ai-planner-container" data-aos="fade-up">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">AI Trip Planner</h2>
+
+      <label>What is your budget?</label>
+      <select id="budget">
+        <option>Low</option>
+        <option>Medium</option>
+        <option>High</option>
+      </select>
+
+      <label>What kind of trip?</label>
+      <select id="triptype">
+        <option>Relaxing</option>
+        <option>Adventure</option>
+        <option>Cultural</option>
+      </select>
+
+      <label>How many days will you travel?</label>
+      <input type="number" id="days" placeholder="e.g., 5" />
+
+      <label>Who are you traveling with?</label>
+      <select id="group">
+        <option>Solo</option>
+        <option>Couple</option>
+        <option>Family</option>
+        <option>Friends</option>
+      </select>
+
+      <label>Which season?</label>
+      <select id="season">
+        <option>Spring</option>
+        <option>Summer</option>
+        <option>Autumn</option>
+        <option>Winter</option>
+      </select>
+
+      <label>Preferred activity?</label>
+      <select id="activity">
+        <option>Beach</option>
+        <option>Hiking</option>
+        <option>Sightseeing</option>
+        <option>City</option>
+        <option>Nature</option>
+      </select>
+
+      <button id="predictBtn">Get My Trip Suggestion</button>
+
+      <div id="ai-result"></div>
+    </div>
+  </section>
+
+  <footer class="bg-gray-800 text-white py-10 mt-auto">
+    <div class="container mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <div class="flex items-center space-x-2">
+            <i data-feather="compass" class="h-6 w-6"></i>
+            <span class="text-xl font-bold">Travel Buddy</span>
+          </div>
+          <p class="text-sm text-gray-400 mt-2">© 2025 Travel Buddy — A Smart Travel Assistance</p>
+        </div>
+        <div class="flex space-x-6">
+          <a href="#" class="text-gray-400 hover:text-white transition">
+            <i data-feather="facebook" class="h-5 w-5"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition">
+            <i data-feather="twitter" class="h-5 w-5"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition">
+            <i data-feather="instagram" class="h-5 w-5"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition">
+            <i data-feather="linkedin" class="h-5 w-5"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize AOS & Feather after DOM ready
+    document.addEventListener('DOMContentLoaded', function() {
+      AOS.init({ duration: 800 });
+      feather.replace();
+
+      // Mobile Menu Toggle
+      const mobileBtn = document.getElementById('mobileMenuBtn');
+      const mobileMenu = document.getElementById('mobileMenu');
+      if (mobileBtn && mobileMenu) {
+        mobileBtn.addEventListener('click', function() {
+          mobileMenu.classList.toggle('hidden');
+        });
+      }
+
+      // Predict button
+      const predictBtn = document.getElementById('predictBtn');
+      if (predictBtn) predictBtn.addEventListener('click', predictTrip);
+    });
+
+    // === AI Trip Planner Function ===
+    async function predictTrip() {
+      const resultBox = document.getElementById('ai-result');
+      // collect values
+      const budget = document.getElementById('budget').value;
+      const triptype = document.getElementById('triptype').value;
+      const days = parseInt(document.getElementById('days').value) || 3;
+      const group = document.getElementById('group').value;
+      const season = document.getElementById('season').value;
+      const activity = document.getElementById('activity').value;
+
+      // clear previous
+      resultBox.style.display = "none";
+      resultBox.innerHTML = "";
+
+      try {
+        const response = await fetch("{{ url_for('suggest_trip') }}", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            budget: budget,
+            triptype: triptype,
+            days: days,
+            group: group,
+            season: season,
+            activity: activity
+          })
+        });
+
+        const data = await response.json();
+
+        resultBox.style.display = "block";
+        if (response.ok) {
+          // server returns HTML suggestion in data.suggestion
+          resultBox.style.backgroundColor = "#e8ffe8";
+          resultBox.innerHTML = data.suggestion || "<p>No suggestion available.</p>";
+        } else {
+          resultBox.style.backgroundColor = "#ffeded";
+          resultBox.innerHTML = `<strong>Error:</strong> ${data.error || 'Server returned an error'}`;
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        resultBox.style.display = "block";
+        resultBox.style.backgroundColor = "#ffeded";
+        resultBox.innerHTML = "<strong>Error:</strong> Could not connect to the prediction server. Is it running?";
+      }
+    }
+    // === END NEW ===
+  </script>
+</body>
+</html>

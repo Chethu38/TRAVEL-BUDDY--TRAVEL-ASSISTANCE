@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Travel Buddy — Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      background: linear-gradient(to right, #0f172a, #1e293b);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #e2e8f0;
+      font-family: system-ui, sans-serif;
+    }
+
+    .glass-card {
+      backdrop-filter: blur(16px);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 1rem;
+      padding: 2rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+      animation: floatUp .7s ease-out;
+    }
+
+    @keyframes floatUp {
+      from {opacity: 0; transform: translateY(40px);}
+      to   {opacity: 1; transform: translateY(0);}
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="glass-card">
+
+    <h1 class="text-3xl font-bold mb-1 tracking-tight">
+      Welcome Back 👋
+    </h1>
+
+    <p class="text-sm opacity-80 mb-5">
+      Sign in to continue your journey with <b>Travel Buddy</b>
+    </p>
+
+    {% if error %}
+    <div class="bg-red-900/60 border border-red-500 text-red-200 text-sm px-3 py-2 rounded mb-4">
+      ⚠ {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('login_page') }}">
+
+      <label class="text-sm" for="email">Email</label>
+      <input required id="email" name="email" type="email"
+             class="w-full mt-1 mb-3 px-3 py-2 rounded bg-slate-800 border border-slate-700 text-slate-200 focus:border-sky-400 outline-none">
+
+      <label class="text-sm" for="password">Password</label>
+      <input required id="password" name="password" type="password"
+             class="w-full mt-1 mb-4 px-3 py-2 rounded bg-slate-800 border border-slate-700 text-slate-200 focus:border-sky-400 outline-none">
+
+      <button
+        class="w-full bg-sky-400 hover:bg-sky-300 font-semibold text-slate-900 rounded-lg py-2 transition">
+        Login
+      </button>
+
+      <div class="flex justify-between mt-3 text-sm">
+        <a href="{{ url_for('forgot_password') }}" class="text-sky-400 hover:underline">
+          Forgot Password?
+        </a>
+        <a href="{{ url_for('signup_page') }}" class="text-sky-400 hover:underline">
+          Create Account
+        </a>
+      </div>
+
+    </form>
+
+    <!-- FOOTER LINE -->
+    <p class="mt-6 text-xs text-center opacity-50">
+      ✈ Travel Buddy • Explore • Plan • Travel • Repeat ✈
+    </p>
+
+  </div>
+
+</body>
+</html>
