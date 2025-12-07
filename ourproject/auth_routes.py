@@ -176,8 +176,8 @@ def verify_password(stored: str, provided: str) -> bool:
         try:
             # Handle both str and bytes for stored hash
             stored_bytes = stored.encode("utf-8") if isinstance(stored, str) else stored
-            provided_bytes = provided.encode("utf-8") if isinstance(provided, str) else provided
-            if bcrypt.checkpw(provided_bytes, stored_bytes):
+            provided_encoded = provided.encode("utf-8")
+            if bcrypt.checkpw(provided_encoded, stored_bytes):
                 return True
         except Exception:
             pass
