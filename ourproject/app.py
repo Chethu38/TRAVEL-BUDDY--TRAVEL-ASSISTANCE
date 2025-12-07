@@ -235,7 +235,7 @@ def predict_crowd_route():
     if not city:
         return jsonify({"error": "City parameter is missing"}), 400
 
-    API_KEY = os.getenv("OPENWEATHER_API_KEY", "9a09529d8cd982b4795c49bf6382d481")
+    API_KEY = os.getenv("OPENWEATHER_API_KEY", "your api key")
     base_url = "https://api.openweathermap.org/data/2.5/weather"
 
     try:
@@ -909,3 +909,4 @@ if __name__ == "__main__":
     log.info(f"Templates dir: {app.template_folder}")
     log.info("Starting Flask server at http://127.0.0.1:5000")
     app.run(debug=True, port=5000)
+
